@@ -1,28 +1,28 @@
 # Bulir Bookings API
 
-RESTful API for a service-booking platform. **Clients** book services offered by **providers** and pay with a balance they hold on the platform. Built for the Bulir backend challenge.
+API RESTful para uma plataforma de reserva de serviços. Os **clientes** reservam serviços oferecidos por **prestadores** e pagam com o saldo que têm na plataforma. Desenvolvida para o desafio de Backend da Bulir.
 
 **Stack:** Node.js 22 · NestJS 11 · TypeScript · PostgreSQL 17 · Prisma 7 · JWT · Docker · Jest
 
-## What it does
+## O que faz
 
-| Area | Behaviour |
+| Área | Comportamento |
 |---|---|
-| Users | Register as client or provider (full name, NIF, e-mail, password). NIF and e-mail are unique; e-mail is case-insensitive. |
-| Auth | Log in with e-mail **or** NIF plus password and receive a JWT. Every route except `register`, `login` and `health` needs `Authorization: Bearer <token>`. |
-| Services | Providers create, list, edit and delete **their own** services (name, description, price). Clients browse the catalogue. |
-| Wallet | Clients top up their balance (simulated, no payment provider). |
-| Bookings | A client books a service. The price is debited from the client and credited to the provider atomically. |
-| Cancellation | The client or the provider of the booking can cancel. The client is refunded in full, once. |
-| History | Each user lists the bookings they took part in (as client or provider), paginated, filterable by status. |
+| Utilizadores | Cadastro como cliente ou prestador (nome completo, NIF, e-mail, senha). NIF e e-mail são únicos; o e-mail não distingue maiúsculas de minúsculas. |
+| Autenticação | Login com e-mail **ou** NIF e senha, que devolve um JWT. Todas as rotas, exceto `register`, `login` e `health`, exigem `Authorization: Bearer <token>`. |
+| Serviços | Os prestadores criam, listam, editam e eliminam **os seus próprios** serviços (nome, descrição, preço). Os clientes consultam o catálogo. |
+| Saldo | Os clientes carregam saldo (simulado, sem integração de pagamento). |
+| Reservas | O cliente reserva um serviço. O preço é debitado ao cliente e creditado ao prestador de forma atómica. |
+| Cancelamento | O cliente ou o prestador da reserva podem cancelar. O cliente é reembolsado por inteiro, uma única vez. |
+| Histórico | Cada utilizador lista as reservas em que participou (como cliente ou como prestador), paginadas e filtráveis por estado. |
 
-## Quick start
+## Início rápido
 
 ```bash
-cp .env.example .env            # then set JWT_SECRET (openssl rand -hex 32) and POSTGRES_PASSWORD
+cp .env.example .env            # depois defina JWT_SECRET (openssl rand -hex 32) e POSTGRES_PASSWORD
 ```
 
-### Option A: everything in Docker
+### Opção A: tudo em Docker
 
 ```bash
 docker compose --profile app up --build
@@ -31,150 +31,150 @@ docker compose --profile app up --build
 # Health:   http://localhost:3000/health
 ```
 
-The container applies pending database migrations before it starts.
+O contentor aplica as migrações da base de dados pendentes antes de arrancar.
 
-### Option B: database in Docker, API on your machine (development)
+### Opção B: base de dados em Docker, API na sua máquina (desenvolvimento)
 
 ```bash
-docker compose up -d db         # change DB_PORT in .env if 5432 is taken, and update DATABASE_URL
+docker compose up -d db         # altere DB_PORT no .env se a 5432 estiver ocupada, e atualize DATABASE_URL
 npm install
-npx prisma migrate deploy       # create the tables
-npm run start:dev               # watch mode
+npx prisma migrate deploy       # cria as tabelas
+npm run start:dev               # modo watch
 ```
 
-### Production-like stack
+### Stack semelhante à produção
 
 ```bash
-cp .env.example .env.production # set strong values for every secret and CORS_ORIGIN
+cp .env.example .env.production # defina valores fortes para todos os segredos e para CORS_ORIGIN
 docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 ```
 
-Differences from development: the database is **not** published to the host, the stack refuses to start without `JWT_SECRET`, `POSTGRES_PASSWORD` and `CORS_ORIGIN`, containers restart automatically, the API runs as a non-root user on a read-only filesystem with a memory limit.
+Diferenças face ao desenvolvimento: a base de dados **não** é publicada no host, o stack recusa arrancar sem `JWT_SECRET`, `POSTGRES_PASSWORD` e `CORS_ORIGIN`, os contentores reiniciam automaticamente, e a API corre como utilizador não-root, com o sistema de ficheiros só de leitura e um limite de memória.
 
-## Tests
+## Testes
 
 ```bash
-npm test            # 43 unit tests: business rules, no database needed
-npm run test:e2e    # 7 end-to-end tests against the real database (needs `docker compose up -d db` and migrations applied)
+npm test            # 43 testes unitários: regras de negócio, sem base de dados
+npm run test:e2e    # 7 testes ponta a ponta contra a base de dados real (requer `docker compose up -d db` e as migrações aplicadas)
 ```
 
-The e2e suite is where the money rules are proven: for example 25 simultaneous bookings from a client with balance for only 10 end with **exactly 10** bookings, and 6 simultaneous cancellations refund **exactly once**. Each run creates its own users and deletes them afterwards.
+É na suite e2e que as regras do dinheiro são provadas: por exemplo, 25 reservas simultâneas de um cliente com saldo para apenas 10 terminam com **exatamente 10** reservas, e 6 cancelamentos simultâneos reembolsam **exatamente uma vez**. Cada execução cria os seus próprios utilizadores e apaga-os no fim.
 
 ## API
 
-Interactive docs and request/response schemas: **`/docs`** (Swagger). All money values are **integers in cents** (`5000` means 50.00). All errors share one shape: `{ statusCode, error, message, path, timestamp }`.
+Documentação interativa e esquemas de pedido e resposta: **`/docs`** (Swagger). Todos os valores monetários são **inteiros em cêntimos** (`5000` significa 50,00). Todos os erros têm o mesmo formato: `{ statusCode, error, message, path, timestamp }`.
 
-| Method | Path | Who | Purpose |
+| Método | Caminho | Quem | Finalidade |
 |---|---|---|---|
-| POST | `/auth/register` | public | Create a user |
-| POST | `/auth/login` | public | Log in with `identifier` (e-mail or NIF) and `password` |
-| GET | `/users/me` | any user | Profile with current balance |
-| POST | `/services` | provider | Create a service |
-| GET | `/services` | client | Catalogue (paginated) |
-| GET | `/services/mine` | provider | My services (paginated) |
-| PATCH | `/services/:id` | owner provider | Edit a service |
-| DELETE | `/services/:id` | owner provider | Delete a service (soft delete) |
-| POST | `/wallet/top-up` | client | Add balance |
-| POST | `/bookings` | client | Book a service |
-| GET | `/bookings` | any user | My history (`?page`, `?limit`, `?status`) |
-| GET | `/bookings/:id` | participant | One booking |
-| POST | `/bookings/:id/cancel` | participant | Cancel with full refund |
-| GET | `/health` | public | Liveness and database check |
+| POST | `/auth/register` | público | Criar um utilizador |
+| POST | `/auth/login` | público | Autenticar com `identifier` (e-mail ou NIF) e `password` |
+| GET | `/users/me` | qualquer utilizador | Perfil com o saldo atual |
+| POST | `/services` | prestador | Criar um serviço |
+| GET | `/services` | cliente | Catálogo (paginado) |
+| GET | `/services/mine` | prestador | Os meus serviços (paginado) |
+| PATCH | `/services/:id` | prestador dono | Editar um serviço |
+| DELETE | `/services/:id` | prestador dono | Eliminar um serviço (eliminação lógica) |
+| POST | `/wallet/top-up` | cliente | Carregar saldo |
+| POST | `/bookings` | cliente | Reservar um serviço |
+| GET | `/bookings` | qualquer utilizador | O meu histórico (`?page`, `?limit`, `?status`) |
+| GET | `/bookings/:id` | participante | Uma reserva |
+| POST | `/bookings/:id/cancel` | participante | Cancelar com reembolso total |
+| GET | `/health` | público | Verificação de disponibilidade e da base de dados |
 
-Status codes: `400` invalid input, `401` missing or invalid token, `403` not allowed, `404` not found, `409` conflict (duplicate user, insufficient balance, already cancelled), `429` rate limit.
+Códigos de estado: `400` dados inválidos, `401` token em falta ou inválido, `403` sem permissão, `404` não encontrado, `409` conflito (utilizador duplicado, saldo insuficiente, reserva já cancelada), `429` limite de pedidos excedido.
 
-## Architecture
+## Arquitetura
 
-Clean Architecture per module. Dependencies point inwards: use cases know nothing about NestJS, HTTP or Prisma.
+Clean Architecture por módulo. As dependências apontam para dentro: os casos de uso não sabem nada de NestJS, HTTP ou Prisma.
 
 ```
-src/modules/<module>/
-  domain/           entities and ports (repository interfaces)
-  application/      use cases = the business rules
-  infrastructure/   Prisma and bcrypt/JWT adapters (implement the ports)
+src/modules/<módulo>/
+  domain/           entidades e portas (interfaces de repositório)
+  application/      casos de uso = as regras de negócio
+  infrastructure/   adaptadores Prisma e bcrypt/JWT (implementam as portas)
   presentation/     controllers, DTOs, guards
-src/shared/         domain errors, global error filter, Prisma service, health check
+src/shared/         erros de domínio, filtro global de erros, serviço Prisma, health check
 ```
 
-Modules: `auth`, `users`, `services`, `wallet`, `bookings`.
+Módulos: `auth`, `users`, `services`, `wallet`, `bookings`.
 
-Why it matters: the rules live in plain classes that unit tests run in milliseconds with in-memory fakes, while Prisma is only one replaceable adapter (Repository Pattern).
+Porque importa: as regras vivem em classes simples que os testes unitários executam em milissegundos com dublês em memória, enquanto o Prisma é apenas um adaptador substituível (Repository Pattern).
 
-## Design decisions
+## Decisões de design
 
-**PostgreSQL, not MongoDB.** The core of this product is money moving between accounts. That needs ACID transactions, row locks and constraints, which PostgreSQL gives natively. The schema also has `CHECK` constraints (`balance >= 0`, `price > 0`, `amount > 0`), so even a bug in the code cannot create a negative balance.
+**PostgreSQL, e não MongoDB.** O núcleo deste produto é dinheiro a mover-se entre contas. Isso exige transações ACID, bloqueios de linha e constraints, que o PostgreSQL oferece nativamente. O esquema tem ainda constraints `CHECK` (`balance >= 0`, `price > 0`, `amount > 0`), pelo que mesmo um erro no código não consegue criar um saldo negativo.
 
-**Money as integer cents.** No floating point, so no rounding errors.
+**Dinheiro em cêntimos inteiros.** Sem vírgula flutuante, logo sem erros de arredondamento.
 
-**Atomic balance changes.** A balance is never read in Node, changed and written back (two requests could overwrite each other). Instead each change is one conditional SQL statement run by PostgreSQL:
+**Alterações de saldo atómicas.** Um saldo nunca é lido em Node, alterado e gravado de volta (dois pedidos poderiam sobrepor-se). Cada alteração é, em vez disso, uma instrução SQL condicional executada pelo PostgreSQL:
 
 ```sql
 UPDATE users SET balance = balance - :price WHERE id = :client AND balance >= :price
 ```
 
-Concurrent requests queue on the row lock; whoever arrives when the money is gone updates zero rows and gets `409`.
+Os pedidos concorrentes esperam pelo bloqueio da linha; quem chega quando o dinheiro já acabou atualiza zero linhas e recebe `409`.
 
-**One transaction per booking.** The debit, the credit and the booking record commit together or not at all (`UnitOfWork` port, Prisma adapter).
+**Uma transação por reserva.** O débito, o crédito e o registo da reserva são confirmados em conjunto ou não são de todo (porta `UnitOfWork`, adaptador Prisma).
 
-**Cancel exactly once.** Cancelling first "claims" the booking with `WHERE status = 'CONFIRMED'`. If several cancellations race, only one claims it and only that one refunds.
+**Cancelar exatamente uma vez.** O cancelamento "reclama" primeiro a reserva com `WHERE status = 'CONFIRMED'`. Se vários cancelamentos disputarem, só um a reclama e só esse reembolsa.
 
-**No deadlocks.** Operations always lock the client's balance first and the provider's second.
+**Sem deadlocks.** As operações bloqueiam sempre primeiro o saldo do cliente e depois o do prestador.
 
-**Price snapshot.** A booking stores the price it was made at, so later price edits never change history or refunds.
+**Preço congelado.** Uma reserva guarda o preço a que foi feita, por isso alterações posteriores ao preço nunca mudam o histórico nem os reembolsos.
 
-**Soft delete for services.** Deleting hides a service from lists but keeps past bookings pointing at it.
+**Eliminação lógica dos serviços.** Eliminar esconde o serviço das listas, mas as reservas passadas continuam a apontar para ele.
 
-**Hand-written JWT guard** instead of Passport, so the whole authentication flow is visible in a single file. The algorithm is pinned to HS256.
+**Guard JWT escrito à mão** em vez de Passport, para que todo o fluxo de autenticação seja visível num único ficheiro. O algoritmo está fixado em HS256.
 
-**Pagination everywhere**, capped at 100 items, so no endpoint can return an unbounded list.
+**Paginação em todo o lado**, limitada a 100 itens, para que nenhum endpoint devolva uma lista sem limite.
 
-## Security
+## Segurança
 
-| Risk | Measure |
+| Risco | Medida |
 |---|---|
-| SQL injection | Prisma sends parameterised queries; no raw string-built SQL |
-| XSS | JSON-only API, input validated and unknown fields rejected, `helmet` security headers |
-| CSRF | The token travels in the `Authorization` header, not in a cookie, so browsers never attach it on their own |
-| Brute force | Global rate limit plus a stricter one on `/auth/login` (10 per minute) |
-| Mass assignment | `whitelist` and `forbidNonWhitelisted` on every DTO (`balance` or `role` tricks are rejected) |
-| Passwords | bcrypt (12 rounds); the hash is never returned |
-| User enumeration | Same `401` for unknown user and wrong password, with equal response time; same `409` for duplicate e-mail or NIF |
-| Authorization | Role guard on routes plus ownership and participation checks inside use cases |
-| Secrets | Required at startup; `JWT_SECRET` must be at least 32 characters |
-| Container | Multi-stage image, non-root user, read-only filesystem in production |
+| SQL injection | O Prisma envia consultas parametrizadas; não há SQL construído por concatenação |
+| XSS | API só JSON, entrada validada e campos desconhecidos rejeitados, cabeçalhos de segurança `helmet` |
+| CSRF | O token viaja no cabeçalho `Authorization`, e não num cookie, por isso o browser nunca o anexa sozinho |
+| Força bruta | Limite global de pedidos e outro mais apertado em `/auth/login` (10 por minuto) |
+| Mass assignment | `whitelist` e `forbidNonWhitelisted` em todos os DTOs (truques com `balance` ou `role` são rejeitados) |
+| Senhas | bcrypt (12 rondas); o hash nunca é devolvido |
+| Enumeração de utilizadores | Mesmo `401` para utilizador desconhecido e senha errada, com o mesmo tempo de resposta; mesmo `409` para e-mail ou NIF duplicado |
+| Autorização | Guard de papéis nas rotas, mais verificações de propriedade e de participação dentro dos casos de uso |
+| Segredos | Obrigatórios no arranque; `JWT_SECRET` tem de ter pelo menos 32 caracteres |
+| Contentor | Imagem multi-stage, utilizador não-root, sistema de ficheiros só de leitura em produção |
 
-## Environment variables
+## Variáveis de ambiente
 
-See `.env.example`. The important ones:
+Ver `.env.example`. As principais:
 
-| Variable | Purpose |
+| Variável | Finalidade |
 |---|---|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Signing key, at least 32 characters |
-| `JWT_EXPIRES_IN` | Token lifetime (default `1h`) |
-| `CORS_ORIGIN` | Allowed browser origins, comma separated. Empty allows any (development only) |
-| `THROTTLE_LIMIT`, `THROTTLE_TTL_MS` | Global rate limit (default 60 per minute per IP) |
-| `THROTTLE_DISABLED` | Tests only. Never set in production |
-| `DB_PORT`, `API_PORT` | Host ports published by Docker Compose |
+| `DATABASE_URL` | String de ligação ao PostgreSQL |
+| `JWT_SECRET` | Chave de assinatura, com pelo menos 32 caracteres |
+| `JWT_EXPIRES_IN` | Validade do token (por defeito `1h`) |
+| `CORS_ORIGIN` | Origens de browser permitidas, separadas por vírgulas. Vazio permite qualquer uma (só em desenvolvimento) |
+| `THROTTLE_LIMIT`, `THROTTLE_TTL_MS` | Limite global de pedidos (por defeito 60 por minuto por IP) |
+| `THROTTLE_DISABLED` | Só para testes. Nunca definir em produção |
+| `DB_PORT`, `API_PORT` | Portas do host publicadas pelo Docker Compose |
 
-## Requirements covered
+## Requisitos cobertos
 
-| Challenge requirement | Where |
+| Requisito do desafio | Onde |
 |---|---|
-| Register users with unique NIF and e-mail, two user types | `auth`, `users` |
-| JWT authentication | `auth` (guard in `jwt-auth.guard.ts`) |
-| Providers manage services | `services` |
-| Clients book, with a balance check and balance updates for both sides | `bookings`, `wallet` |
-| Booking history | `GET /bookings` |
-| Permission checks on creating and cancelling | role guard and use cases |
-| Atomic balance updates | conditional SQL inside one transaction |
-| Free choice of database and ORM | PostgreSQL and Prisma, justified above |
+| Cadastro com NIF e e-mail únicos, dois tipos de utilizador | `auth`, `users` |
+| Autenticação JWT | `auth` (guard em `jwt-auth.guard.ts`) |
+| Prestadores gerem serviços | `services` |
+| Clientes reservam, com verificação de saldo e atualização do saldo de ambos | `bookings`, `wallet` |
+| Histórico de reservas | `GET /bookings` |
+| Verificação de permissões ao criar e cancelar | guard de papéis e casos de uso |
+| Atualizações de saldo atómicas | SQL condicional dentro de uma transação |
+| Livre escolha de base de dados e ORM | PostgreSQL e Prisma, justificados acima |
 
-## Assumptions and limits
+## Pressupostos e limites
 
-- The challenge does not say how a client gets balance, so a simulated top-up endpoint was added.
-- "Update a booking" is limited to the only meaningful change: cancelling it.
-- Insufficient balance answers `409` (the request is valid but conflicts with the account state).
-- The NIF format is not specified; any 9 to 14 letters or digits is accepted.
-- Migrations run when the container starts, which is safe for one API instance. With several instances, run `prisma migrate deploy` as a separate release step.
-- Not implemented: refresh tokens, e-mail verification, a real payment provider.
+- O desafio não diz como um cliente obtém saldo, por isso foi acrescentado um endpoint de carregamento simulado.
+- "Atualizar uma reserva" limita-se à única alteração com sentido: cancelá-la.
+- Saldo insuficiente responde `409` (o pedido é válido, mas conflita com o estado da conta).
+- O formato do NIF não está especificado; aceita-se qualquer sequência de 9 a 14 letras ou dígitos.
+- As migrações correm quando o contentor arranca, o que é seguro com uma só instância da API. Com várias instâncias, execute `prisma migrate deploy` como passo de release separado.
+- Não implementado: refresh tokens, verificação de e-mail, um fornecedor de pagamento real.
