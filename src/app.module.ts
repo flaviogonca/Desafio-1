@@ -10,6 +10,7 @@ import { RolesGuard } from './modules/auth/presentation/roles.guard';
 import { ServicesModule } from './modules/services/services.module';
 import { UsersModule } from './modules/users/users.module';
 import { WalletModule } from './modules/wallet/wallet.module';
+import { HealthController } from './shared/http/health.controller';
 import { PrismaModule } from './shared/prisma/prisma.module';
 
 @Module({
@@ -35,6 +36,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
     WalletModule,
     BookingsModule,
   ],
+  controllers: [HealthController],
   providers: [
     // Order matters: rate limit first, then authenticate, then authorise by role.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
