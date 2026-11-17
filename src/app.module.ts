@@ -6,6 +6,7 @@ import { validateEnv } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/presentation/jwt-auth.guard';
 import { RolesGuard } from './modules/auth/presentation/roles.guard';
+import { ServicesModule } from './modules/services/services.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './shared/prisma/prisma.module';
 
@@ -24,6 +25,7 @@ import { PrismaModule } from './shared/prisma/prisma.module';
     PrismaModule,
     UsersModule,
     AuthModule,
+    ServicesModule,
   ],
   providers: [
     // Order matters: rate limit first, then authenticate, then authorise by role.
