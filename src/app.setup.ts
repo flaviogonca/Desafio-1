@@ -5,7 +5,9 @@ import { AllExceptionsFilter } from './shared/http/all-exceptions.filter';
 /** Shared by main.ts and the e2e tests, so tests exercise exactly what runs in production. */
 export function configureApp(app: INestApplication): void {
   app.use(helmet());
-  app.enableCors({ origin: process.env.CORS_ORIGIN?.split(',') ?? true });
+  // CORS_ORIGIN="https://a.com,https://b.com". Empty or unset allows any origin (development only).
+  const origins = process.env.CORS_ORIGIN?.split(',').map((o) => o.trim()).filter(Boolean);
+  app.enableCors({ origin: origins?.length ? origins : true });
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(
     new ValidationPipe({
