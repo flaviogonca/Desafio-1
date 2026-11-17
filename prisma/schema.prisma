@@ -1,0 +1,81 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CLIENT
+  PROVIDER
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+// All money values are integers in the smallest currency unit (cents) to avoid
+// floating point errors. CHECK constraints (balance >= 0, price > 0, amount > 0)
+// are added in the migration SQL, so the database itself enforces the rules.
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  nif          String   @unique
+  email        String   @unique // always stored lowercased (case-insensitive uniqueness)
+  passwordHash String
+  role         Role
+  balance      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  services         Service[]
+  bookingsAsClient Booking[] @relation("BookingClient")
+  bookingsReceived Booking[] @relation("BookingProvider")
+
+  @@map("users")
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  price       Int
+  providerId  String
+  // Soft delete: bookings keep pointing at the service they were made for.
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  provider User      @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  bookings Booking[]
+
+  @@index([providerId])
+  @@map("services")
+}
+
+// A booking is also the financial transaction: it is the platform history.
+// `amount` is a snapshot of the price at booking time, so later price edits
+// never change past transactions or refund values.
+model Booking {
+  id            String        @id @default(uuid())
+  serviceId     String
+  clientId      String
+  providerId    String // denormalised so each user's history is a single indexed query
+  amount        Int
+  status        BookingStatus @default(CONFIRMED)
+  createdAt     DateTime      @default(now())
+  cancelledAt   DateTime?
+  cancelledById String?
+
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  client   User    @relation("BookingClient", fields: [clientId], references: [id], onDelete: Restrict)
+  provider User    @relation("BookingProvider", fields: [providerId], references: [id], onDelete: Restrict)
+
+  @@index([clientId, createdAt])
+  @@index([providerId, createdAt])
+  @@map("bookings")
+}
