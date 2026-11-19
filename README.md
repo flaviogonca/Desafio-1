@@ -4,6 +4,16 @@ API RESTful para uma plataforma de reserva de serviços. Os **clientes** reserva
 
 **Stack:** Node.js 22 · NestJS 11 · TypeScript · PostgreSQL 17 · Prisma 7 · JWT · Docker · Jest
 
+## API em produção
+
+| | |
+|---|---|
+| URL base | https://bulir-api-ook4.onrender.com |
+| Documentação (Swagger) | https://bulir-api-ook4.onrender.com/docs |
+| Estado | https://bulir-api-ook4.onrender.com/health |
+
+Está alojada no plano gratuito do Render, por isso **adormece após alguns minutos sem pedidos** e o primeiro pedido pode demorar cerca de um minuto. Se der erro de tempo esgotado, repita.
+
 ## O que faz
 
 | Área | Comportamento |
