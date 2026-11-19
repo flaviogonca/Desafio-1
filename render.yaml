@@ -21,6 +21,6 @@ services:
       - key: JWT_SECRET
         generateValue: true # random 256-bit value, never stored in git
       - key: TRUST_PROXY
-        value: "1" # Render puts one proxy in front of the service
+        value: "2" # Cloudflare edge + Render load balancer = 2 proxy hops (measured: with 1 the limit is split across edge IPs)
       - key: CORS_ORIGIN
         sync: false # asked on first deploy: the frontend URL
