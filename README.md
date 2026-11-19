@@ -165,7 +165,7 @@ Ver `.env.example`. As principais:
 | `JWT_EXPIRES_IN` | Validade do token (por defeito `1h`) |
 | `CORS_ORIGIN` | Origens de browser permitidas, separadas por vírgulas. Vazio permite qualquer uma (só em desenvolvimento) |
 | `THROTTLE_LIMIT`, `THROTTLE_TTL_MS` | Limite global de pedidos (por defeito 60 por minuto por IP) |
-| `TRUST_PROXY` | Número de proxies de confiança à frente da API (Render: `2`, por causa do Cloudflare + balanceador). Sem isto o limite de pedidos seria partilhado por todos os utilizadores |
+| `TRUST_PROXY` | Número de proxies de confiança à frente da API (Render: `3`, medido: cliente, Cloudflare, proxy do Render e contentor). Sem isto o limite de pedidos seria partilhado por todos os utilizadores |
 | `THROTTLE_DISABLED` | Só para testes. Nunca definir em produção |
 | `DB_PORT`, `API_PORT` | Portas do host publicadas pelo Docker Compose |
 
