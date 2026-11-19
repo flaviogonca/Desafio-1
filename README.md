@@ -143,6 +143,17 @@ Os pedidos concorrentes esperam pelo bloqueio da linha; quem chega quando o dinh
 | Segredos | Obrigatórios no arranque; `JWT_SECRET` tem de ter pelo menos 32 caracteres |
 | Contentor | Imagem multi-stage, utilizador não-root, sistema de ficheiros só de leitura em produção |
 
+## Deploy no Render
+
+O ficheiro [`render.yaml`](render.yaml) (Blueprint) descreve a API (Docker, usa o `Dockerfile`) e a base de dados PostgreSQL.
+
+1. No Render: **New → Blueprint** e escolher este repositório.
+2. Preencher `CORS_ORIGIN` quando pedido (URL do frontend; para já pode ficar um valor provisório).
+3. O `JWT_SECRET` é gerado pelo Render e o `DATABASE_URL` vem da base de dados criada pelo Blueprint. As migrações correm no arranque.
+4. Verificar `GET /health` e abrir `/docs` (Swagger).
+
+Notas: no plano gratuito o serviço **adormece** após alguns minutos sem pedidos (o primeiro pedido demora cerca de um minuto) e a base de dados gratuita expira ao fim de 30 dias.
+
 ## Variáveis de ambiente
 
 Ver `.env.example`. As principais:
@@ -154,6 +165,7 @@ Ver `.env.example`. As principais:
 | `JWT_EXPIRES_IN` | Validade do token (por defeito `1h`) |
 | `CORS_ORIGIN` | Origens de browser permitidas, separadas por vírgulas. Vazio permite qualquer uma (só em desenvolvimento) |
 | `THROTTLE_LIMIT`, `THROTTLE_TTL_MS` | Limite global de pedidos (por defeito 60 por minuto por IP) |
+| `TRUST_PROXY` | Número de proxies de confiança à frente da API (Render: `1`). Sem isto o limite de pedidos seria partilhado por todos os utilizadores |
 | `THROTTLE_DISABLED` | Só para testes. Nunca definir em produção |
 | `DB_PORT`, `API_PORT` | Portas do host publicadas pelo Docker Compose |
 
